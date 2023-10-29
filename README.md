@@ -84,6 +84,7 @@ az = torch.asin(f[:, 0].clip(-1, 1))
 az = torch.where(f[:, 1] > 0, az, math.pi - az)
 az = torch.where(az > 0, az, az + 2.0 * math.pi)
 </code>
+
 ![prediction](https://github.com/bishnarender/icecube-neutrinos-in-deep-ice/assets/49610834/37bf4d92-6f36-48fc-9a4d-db280f6b0e9a)
 
 #### von Mises-Fisher
@@ -118,7 +119,8 @@ Cyclical Learning Rates are effective because they can successfully negotiate sa
 Super-convergence and 1cycle policy. Super-convergence uses the CLR method, but with just one cycle—which contains two learning rate steps, one increasing and one decreasing—and a large maximum learning rate bound. The cycle’s size must be smaller than the total number of iterations/epochs. After the cycle is complete, the learning rate should decrease even further for the remaining iterations/epochs, several orders of magnitude less than its initial value.
 
 Concretely, in super-convergence, learning rate starts at a low value, increases to a very large value and then decreases to a value much lower than its initial one. A large learning rate acts as a regularisation method. Hence, when using the 1cycle policy, other regularisation methods (batch size, momentum, weight decay, etc) must be reduced.
-[Reference :](https://iconof.com/1cycle-learning-rate-policy/)
+
+[Reference](https://iconof.com/1cycle-learning-rate-policy/)
 
 
 
