@@ -1,6 +1,6 @@
 ## icecube-neutrinos-in-deep-ice
 ## score at 3rd position is achieved.
-
+![icecube-score](https://github.com/bishnarender/icecube-neutrinos-in-deep-ice/assets/49610834/2a699f3c-3296-4b97-9440-bbbab48ede03)
 
 ### Start 
 -----
@@ -67,3 +67,66 @@ There are 16 transformer blocks in total: 4 blocks with rel_pos_bias + 12 blocks
 "Linear(384,1).weight" (in model diagram) acts as a cls_token. The use cls token enables the gradual collection of information about the track direction throughout the entire model.
 
 Trained for the first 2-3 epochs with von Mises-Fisher Loss, and the remaining epochs are performed with using the "competition metric as the objective function" + "0.05 von Mises-Fisher Loss".
+![model](https://github.com/bishnarender/icecube-neutrinos-in-deep-ice/assets/49610834/4776c4d6-42e0-4a92-bbb3-97aa54399b64)
+
+![block_rel_type_1](https://github.com/bishnarender/icecube-neutrinos-in-deep-ice/assets/49610834/d9e858ed-4d56-4e15-95ab-9bf800c7b5f4)
+
+![block_rel_type_2](https://github.com/bishnarender/icecube-neutrinos-in-deep-ice/assets/49610834/06675cd0-1880-429d-bf15-99e55b85b24a)
+
+The output [BS,3] is transformed to [azimuth,zenith] form as:
+<code>
+#- pred.shape => torch.Size([BS, 3])
+#- .normalize(input, p=2.0, dim=-1, ...) => Performs Lp normalization of inputs over specified dimension.
+pred = F.normalize(pred.float(), dim=-1)   #- converting to unit vectors.
+zen = torch.acos(pred[:, 2].clip(-1, 1))
+f = F.normalize(pred[:, :2], dim=-1)
+az = torch.asin(f[:, 0].clip(-1, 1))
+az = torch.where(f[:, 1] > 0, az, math.pi - az)
+az = torch.where(az > 0, az, az + 2.0 * math.pi)
+</code>
+![prediction](https://github.com/bishnarender/icecube-neutrinos-in-deep-ice/assets/49610834/37bf4d92-6f36-48fc-9a4d-db280f6b0e9a)
+
+#### von Mises-Fisher
+In directional statistics, the von Mises–Fisher, is a probability distribution on the (m-1)-sphere in R<sup>m</sup>. If m=2 the distribution reduces to the von Mises distribution on the circle.
+The probability density function of the von Mises–Fisher distribution for the random m-dimensional unit vector e(w) is given by:
+![von-mises](https://github.com/bishnarender/icecube-neutrinos-in-deep-ice/assets/49610834/593bf23c-d01a-4f23-8861-7e43f5c95ed1)
+
+The parameters µ and κ are called the mean direction and concentration parameter, respectively. The greater the value of κ, the higher the concentration of the distribution around the mean direction µ. The distribution is “unimodal for κ>0”, “point distribution for κ>0” and “is uniform on the sphere for κ=0”. 
+A natural choice for estimating directional distributions is von Mises-Fisher (vMF) distribution defined over a hypersphere of unit norm. That is, a vector close to the mean direction will have high probability. 
+The output of the model at each step is a unit vector e_cap of dimension m (=3 in our case). We use κ = ||e_cap||. Thus the density function becomes:
+![von-mises-loss](https://github.com/bishnarender/icecube-neutrinos-in-deep-ice/assets/49610834/09be554f-243e-49d2-9df0-62e8d94b8f7f)
+
+Here in our case, kappa is estimated from L2-norm of x,y, and z values. Dot product is computed between prediction ([BS,3]) and target ([BS,3]). The target values (i.e., x,y and z) are obtained from [azimuth,zenith] from train_meta_x.parquet as:
+<code>
+x = cos(azimuth) * sin(zenith)
+y = sin(azimuth) * sin(zenith)
+z = cos(zenith)
+</code>
+[Loss Reference](https://arxiv.org/pdf/1812.04616.pdf)
+
+#### Neutrinos
+Neutrinos are subatomic particles with no electric charge, very little mass, and 1/2 unit of spin. 
+Neutrinos are often called "ghost particles" because they barely interact with anything else. They are difficult to detect because they have minimal interaction with matter. To detect neutrinos, very large and sensitive detectors are required. Every time atomic nuclei come together (like in the sun) or break apart (like in a nuclear reactor), they produce neutrinos. Even a banana emits neutrinos—they come from the natural radioactivity of the potassium in the fruit.
+
+The "IceCube Neutrino Observatory" is the first detector of its kind, which consists of a cubic kilometer of ice and is designed to search for nearly massless neutrinos. The rare interaction of neutrinos with the matter may produce high-energy particles emitting "Cherenkov radiation", which is recorded with photo-detectors immersed in ice. The objective of this challenge was a reconstruction of the neutrino trace direction based on the photon detections.
+
+#### Cyclical Learning Rates
+CLR method allows learning rate to continuously oscillate between reasonable minimum and maximum bounds. Each step has a size (called stepsize), which is the number of iterations (e.g. 1k, 5k, etc) for which learning rate increases/decreases. Two steps form a cycle. Concretely, a CLR cycle with stepsize of 5,000 will consist of 5,000 + 5,000 = 10,000 total iterations. 
+
+Cyclical Learning Rates are effective because they can successfully negotiate saddle points, which typically have small gradients (flat surfaces) and can slow down training when learning rate is small. The best way to overcome such obstacles is to speed up and to move fast until a curved surface is found. The increasing learning rate of CLRs does just that, efficiently.
+
+Super-convergence and 1cycle policy. Super-convergence uses the CLR method, but with just one cycle—which contains two learning rate steps, one increasing and one decreasing—and a large maximum learning rate bound. The cycle’s size must be smaller than the total number of iterations/epochs. After the cycle is complete, the learning rate should decrease even further for the remaining iterations/epochs, several orders of magnitude less than its initial value.
+
+Concretely, in super-convergence, learning rate starts at a low value, increases to a very large value and then decreases to a value much lower than its initial one. A large learning rate acts as a regularisation method. Hence, when using the 1cycle policy, other regularisation methods (batch size, momentum, weight decay, etc) must be reduced.
+[Reference :](https://iconof.com/1cycle-learning-rate-policy/)
+
+
+
+
+
+
+
+
+
+
+
