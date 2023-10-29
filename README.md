@@ -16,7 +16,7 @@ Results present in ice_transparency.txt is obtained from "table of results" pres
 Three primary components that speedup the process are: 
 1. caching the selected data chunks to minimize the substantial cost of data loading and preprocessing, 
 2. employing chunk-based random sampling to effectively utilize caching, and
-​3. Implementing length-matched data sampling (sa​mpling batches with approximately equal lengths) to reduce the computational overhead associated with padding tokens when truncating the batch at the longest sequence.
+3. Implementing length-matched data sampling (sa​mpling batches with approximately equal lengths) to reduce the computational overhead associated with padding tokens when truncating the batch at the longest sequence.
 
 For events exceeding the maximum considered sequence length, ​p​erformed the following selection process: Initially, ​select randomly detections from the auxiliary=false subset, and if this subset proved insufficient to create a sequence of the required length, then ​sample randomly ​from noisy auxiliary=true detections.
 <code>
